@@ -30,6 +30,7 @@ void close_connection(PGconn* conn) {
 // NOTICE:  relation "appointments" already exists, skipping
 // Database initialized successfully.
 void initialize_database(PGconn* conn) {
+    // initializing the tables and create them if it doesn't exist
     const char* create_tables[] = {
         "CREATE TABLE IF NOT EXISTS users ("
         "user_id SERIAL PRIMARY KEY, "
@@ -37,17 +38,23 @@ void initialize_database(PGconn* conn) {
         "username VARCHAR(50) UNIQUE NOT NULL, "
         "email VARCHAR(100) UNIQUE NOT NULL, "
         "password VARCHAR(255) NOT NULL, "
-        "role VARCHAR(20) NOT NULL);",
+        "role VARCHAR(20) NOT NULL, "
+        "street VARCHAR(100) NOT NULL, "
+        "city VARCHAR(50) NOT NULL, "
+        "state VARCHAR(50) NOT NULL, "
+        "zipcode VARCHAR(10) NOT NULL);",
 
         "CREATE TABLE IF NOT EXISTS doctors ("
+        "doctor_id SERIAL PRIMARY KEY, "
+        "user_id INT NOT NULL UNIQUE, "
         "specialization VARCHAR(50) NOT NULL, "
-        "PRIMARY KEY (user_id)) "
-        "INHERITS (users);",
+        "FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE);",
 
         "CREATE TABLE IF NOT EXISTS receptionists ("
+        "receptionist_id SERIAL PRIMARY KEY, "
+        "user_id INT NOT NULL UNIQUE, "
         "shift_time VARCHAR(20) NOT NULL, "
-        "PRIMARY KEY (user_id)) "
-        "INHERITS (users);",
+        "FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE);",
 
         "CREATE TABLE IF NOT EXISTS patients ("
         "patient_id SERIAL PRIMARY KEY, "
@@ -59,19 +66,22 @@ void initialize_database(PGconn* conn) {
         "visitor_id SERIAL PRIMARY KEY, "
         "name VARCHAR(50) NOT NULL, "
         "contact VARCHAR(15) NOT NULL, "
-        "patient_id INT REFERENCES patients(patient_id), "
+        "patient_id INT NOT NULL, "
         "check_in_time TIMESTAMP NOT NULL, "
-        "check_out_time TIMESTAMP);",
+        "check_out_time TIMESTAMP, "
+        "FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE);",
 
         "CREATE TABLE IF NOT EXISTS appointments ("
         "appointment_id SERIAL PRIMARY KEY, "
-        "patient_id INT REFERENCES patients(patient_id), "
-        "doctor_id INT REFERENCES doctors(user_id), "
+        "patient_id INT NOT NULL, "
+        "doctor_id INT NOT NULL, "
         "appointment_time TIMESTAMP NOT NULL, "
-        "status VARCHAR(20) DEFAULT 'Scheduled');"
+        "status VARCHAR(20) DEFAULT 'Scheduled', "
+        "FOREIGN KEY (patient_id) REFERENCES patients(patient_id) ON DELETE CASCADE, "
+        "FOREIGN KEY (doctor_id) REFERENCES doctors(doctor_id) ON DELETE CASCADE);"
     };
 
-    // iterate through the array and execute each table creation.
+    // iterate through the array and execute each table creation.z
     for (int i = 0; i < 6; i++) {
         PGresult* res = PQexec(conn, create_tables[i]);
         if (PQresultStatus(res) != PGRES_COMMAND_OK) {
